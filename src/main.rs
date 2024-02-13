@@ -132,18 +132,44 @@ impl eframe::App for Hibiki {
                                 );
                             });
                     });
-                    ui.add_space(2.);
+                    ui.add_space(5.);
                     ui.horizontal(|ui| {
-                        let volume = Knob {
-                            hint_color: catppuccin_egui::MACCHIATO.yellow,
-                            val: &mut controller.volume,
-                        };
-                        volume.ui(ui);
-                        let pan = Knob {
-                            hint_color: catppuccin_egui::MACCHIATO.blue,
-                            val: &mut controller.pan,
-                        };
-                        pan.ui(ui);
+                        ui.vertical(|ui| {
+                            ui.label("Volume");
+                            let volume = Knob {
+                                hint_color: catppuccin_egui::MACCHIATO.yellow,
+                                val: &mut controller.volume,
+                            };
+                            volume.ui(ui);
+
+                            let vol_ref = &mut controller.volume;
+                            let sink_ref = &mut controller.sink;
+                            ui.add(
+                                egui::DragValue::from_get_set(move |v: Option<f64>| {
+                                    if let Some(v) = v {
+                                        *vol_ref = v;
+                                        sink_ref.set_volume(v as f32);
+                                    }
+                                    *vol_ref
+                                })
+                                .clamp_range(0..=10)
+                                .speed(0.02),
+                            );
+                        });
+
+                        ui.vertical(|ui| {
+                            ui.label("Pan");
+                            let pan = Knob {
+                                hint_color: catppuccin_egui::MACCHIATO.blue,
+                                val: &mut controller.pan,
+                            };
+                            pan.ui(ui);
+                            ui.add(
+                                egui::DragValue::new(&mut controller.pan)
+                                    .clamp_range(-1..=1)
+                                    .speed(0.02),
+                            );
+                        });
                     });
                 } else {
                     ui.label(RichText::new("Right-click on a sound to inspect").italics());

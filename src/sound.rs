@@ -19,8 +19,8 @@ pub struct Sound {
     pub sink: Sink,
     /// Used by `Activating` for storing its state
     pub state: bool,
-    pub volume: f32,
-    pub pan: f32,
+    pub volume: f64,
+    pub pan: f64,
     pub color: Color32,
 }
 
@@ -49,7 +49,7 @@ impl SoundSource {
         })
     }
 
-    pub fn source(&self) -> Decoder<Cursor<Arc<[u8]>>> {
+    pub fn decoder(&self) -> Decoder<Cursor<Arc<[u8]>>> {
         let source = Decoder::new(Cursor::new(self.data.clone()));
         source.unwrap()
     }
