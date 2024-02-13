@@ -48,4 +48,5 @@ pub struct SceneEntry {
     pub controller: SoundKind,
     pub volume: f64,
     pub pan: f64,
+    pub color: [u8; 3],
 }

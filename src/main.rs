@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use board::Board;
-use eframe::egui::{self, Label, RichText, Widget};
+use eframe::egui::{self, color_picker::Alpha, Label, RichText, Widget};
 use egui_notify::Toasts;
 use knob::Knob;
 use rodio::OutputStream;
@@ -89,6 +89,11 @@ impl eframe::App for Hibiki {
                             .unwrap()
                             .to_str()
                             .unwrap(),
+                    );
+                    egui::widgets::color_picker::color_edit_button_srgba(
+                        ui,
+                        &mut controller.color,
+                        Alpha::Opaque,
                     );
                     ui.horizontal(|ui| {
                         ui.label("Kind: ");
