@@ -119,20 +119,22 @@ impl Board {
                     }
                 }
             });
-            if ui.button("Add Sound").clicked() {
-                if let Some(path) = rfd::FileDialog::new()
+            if ui.button("Add Sounds").clicked() {
+                if let Some(paths) = rfd::FileDialog::new()
                     .add_filter("Sound File", &["mp3", "wav", "flac", "ogg"])
-                    .pick_file()
+                    .pick_files()
                 {
-                    if let Some(source) = SoundSource::from_file(path).handle_toasty(toasts) {
-                        self.sounds.push(Sound {
-                            kind: SoundKind::Trigger,
-                            source,
-                            sink: Sink::try_new(&self.stream_handle).unwrap(),
-                            state: false,
-                            volume: 1.0,
-                            pan: 1.0,
-                        });
+                    for path in paths {
+                        if let Some(source) = SoundSource::from_file(path).handle_toasty(toasts) {
+                            self.sounds.push(Sound {
+                                kind: SoundKind::Trigger,
+                                source,
+                                sink: Sink::try_new(&self.stream_handle).unwrap(),
+                                state: false,
+                                volume: 1.0,
+                                pan: 1.0,
+                            });
+                        }
                     }
                 }
             }
