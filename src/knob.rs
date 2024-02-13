@@ -5,7 +5,7 @@ use eframe::{
 
 pub struct Knob<'a> {
     pub hint_color: Color32,
-    pub val: &'a mut f32,
+    pub val: &'a mut f64,
 }
 
 impl Widget for Knob<'_> {
