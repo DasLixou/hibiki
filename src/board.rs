@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use eframe::egui::{self, Ui, Widget};
+use eframe::{
+    egui::{self, Ui, Widget},
+    epaint::Color32,
+};
 use egui_notify::Toasts;
 use rodio::{OutputStreamHandle, Sink, Source};
 
@@ -52,6 +55,11 @@ impl Board {
                             state: false,
                             volume: 1.0,
                             pan: 1.0,
+                            color: Color32::from_rgb(
+                                entry.color[0],
+                                entry.color[1],
+                                entry.color[2],
+                            ),
                         })
                 })
                 .collect(),
@@ -66,6 +74,7 @@ impl Board {
                 .map(|sound| SceneEntry {
                     sound_path: sound.source.path.clone(),
                     controller: sound.kind,
+                    color: [sound.color.r(), sound.color.g(), sound.color.b()],
                 })
                 .collect(),
         }
@@ -133,6 +142,7 @@ impl Board {
                                 state: false,
                                 volume: 1.0,
                                 pan: 1.0,
+                                color: catppuccin_egui::MACCHIATO.surface1,
                             });
                         }
                     }
@@ -155,7 +165,7 @@ impl Board {
     }
 
     fn sound_trigger(ui: &mut Ui, sound: &mut Sound, stream_handle: &OutputStreamHandle) -> bool {
-        let trigger = Trigger {}.ui(ui);
+        let trigger = Trigger { color: sound.color }.ui(ui);
         match sound.kind {
             SoundKind::Trigger if trigger.clicked() => {
                 let source = sound.source.source();

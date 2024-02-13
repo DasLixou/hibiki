@@ -6,6 +6,7 @@ use std::{
     sync::Arc,
 };
 
+use eframe::epaint::Color32;
 use rodio::{Decoder, Sink};
 use serde::{Deserialize, Serialize};
 
@@ -20,6 +21,7 @@ pub struct Sound {
     pub state: bool,
     pub volume: f32,
     pub pan: f32,
+    pub color: Color32,
 }
 
 pub struct SoundSource {

@@ -46,4 +46,5 @@ impl Scene {
 pub struct SceneEntry {
     pub sound_path: PathBuf,
     pub controller: SoundKind,
+    pub color: [u8; 3],
 }
