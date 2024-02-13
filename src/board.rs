@@ -42,6 +42,19 @@ impl Board {
             .collect()
     }
 
+    fn pack_scene(&self) -> Scene {
+        Scene {
+            entries: self
+                .sounds
+                .iter()
+                .map(|sound| SceneEntry {
+                    sound_path: sound.source.path.clone(),
+                    controller: sound.kind,
+                })
+                .collect(),
+        }
+    }
+
     pub fn selected_controller_mut(&mut self) -> Option<&mut Sound> {
         if let Some(index) = self.selected_controller {
             self.sounds.get_mut(index)
@@ -54,8 +67,9 @@ impl Board {
         egui::Window::new("Board").show(ui.ctx(), |ui| {
             ui.horizontal(|ui| {
                 ui.label(self.scene_path.file_name().unwrap().to_str().unwrap());
-                if ui.button("Open Scene").clicked() {
+                if ui.button("Open").clicked() {
                     if let Some(path) = rfd::FileDialog::new()
+                        .set_title("Open Scene")
                         .add_filter("Hibiki Scene", &["hibiki.ron"])
                         .pick_file()
                     {
@@ -63,21 +77,23 @@ impl Board {
                         self.scene_path = path;
                     }
                 }
-                if ui.button("Reload Scene").clicked() {
+                if ui.button("Reload").clicked() {
                     self.sounds = Self::load_sounds(&self.scene_path, &self.stream_handle);
                 }
-                if ui.button("Save Scene").clicked() {
-                    let scene = Scene {
-                        entries: self
-                            .sounds
-                            .iter()
-                            .map(|sound| SceneEntry {
-                                sound_path: sound.source.path.clone(),
-                                controller: sound.kind,
-                            })
-                            .collect(),
-                    };
+                if ui.button("Save").clicked() {
+                    let scene = self.pack_scene();
                     scene.save(&self.scene_path);
+                }
+                if ui.button("Save as").clicked() {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title("Save scene as")
+                        .set_file_name("my_scene.hibiki.ron")
+                        .save_file()
+                    {
+                        let scene = self.pack_scene();
+                        scene.save(&path);
+                        self.scene_path = path;
+                    }
                 }
             });
             if ui.button("Add Sound").clicked() {
@@ -85,8 +101,8 @@ impl Board {
                     .add_filter("Sound File", &["mp3", "wav", "flac", "ogg"])
                     .pick_file()
                 {
-                    if path.is_file() // necessary on Linux as file dialog allows selecting dirs
-                    {
+                    // necessary on Linux as file dialog allows selecting dirs
+                    if path.is_file() {
                         self.sounds.push(Sound {
                             kind: SoundKind::Trigger,
                             source: SoundSource::from_file(path).unwrap(),
