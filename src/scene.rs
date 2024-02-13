@@ -6,35 +6,39 @@ use std::{
 use ron::ser::PrettyConfig;
 use serde::{Deserialize, Serialize};
 
-use crate::sound::SoundKind;
+use crate::{error::HibikiError, sound::SoundKind};
 
 pub struct Scene {
     pub entries: Box<[SceneEntry]>,
 }
 
 impl Scene {
-    pub fn load(scene_path: &PathBuf) -> Self {
+    pub fn load(scene_path: &PathBuf) -> Result<Self, HibikiError> {
         if scene_path.exists() {
-            let file = File::open(&scene_path).expect("Couldn't load or create scene file");
-            Self {
-                entries: ron::de::from_reader(&file).expect("Broken scene file"),
+            // necessary on Linux as file dialog allows selecting dirs
+            if !scene_path.is_file() {
+                return Err(HibikiError::NotAFile(scene_path.clone()));
             }
+            let file = File::open(&scene_path).map_err(HibikiError::InternalError)?;
+            Ok(Self {
+                entries: ron::de::from_reader(&file).map_err(HibikiError::BrokenScene)?,
+            })
         } else {
-            Self {
+            Ok(Self {
                 entries: Box::new([]),
-            }
+            })
         }
     }
 
-    pub fn save(&self, scene_path: &PathBuf) {
+    pub fn save(&self, scene_path: &PathBuf) -> Result<(), HibikiError> {
         let file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
             .open(&scene_path)
-            .expect("Couldn't open or create scene file");
+            .map_err(HibikiError::InternalError)?;
         ron::ser::to_writer_pretty(file, &self.entries, PrettyConfig::default())
-            .expect("Couldn't save scene file");
+            .map_err(HibikiError::SceneSerialize)
     }
 }
 

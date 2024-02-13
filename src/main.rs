@@ -1,12 +1,14 @@
 use std::path::PathBuf;
 
 use board::Board;
-use eframe::egui::{self, RichText, Widget};
+use eframe::egui::{self, Label, RichText, Widget};
+use egui_notify::Toasts;
 use knob::Knob;
 use rodio::OutputStream;
 use sound::SoundKind;
 
 mod board;
+mod error;
 mod knob;
 mod scene;
 mod sound;
@@ -24,6 +26,7 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 struct Hibiki {
+    toasts: Toasts,
     board: Board,
     _stream: OutputStream,
 }
@@ -45,9 +48,19 @@ impl Hibiki {
 
         let (_stream, stream_handle) = OutputStream::try_default().unwrap();
 
-        let board = Board::new(PathBuf::from("scene.hibiki.ron"), stream_handle);
+        let mut toasts = Toasts::default();
 
-        Self { board, _stream }
+        let board = Board::new(
+            PathBuf::from("scene.hibiki.ron"),
+            stream_handle,
+            &mut toasts,
+        );
+
+        Self {
+            toasts,
+            board,
+            _stream,
+        }
     }
 }
 
@@ -55,14 +68,17 @@ impl eframe::App for Hibiki {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.centered_and_justified(|ui| {
-                ui.heading(
+                Label::new(
                     RichText::new("響")
                         .family(egui::FontFamily::Name("DelaGothicOne".into()))
                         .size(200.)
-                        .color(catppuccin_egui::MACCHIATO.surface0),
-                );
+                        .color(catppuccin_egui::MACCHIATO.surface0)
+                        .heading(),
+                )
+                .selectable(false)
+                .ui(ui);
             });
-            self.board.ui(ui);
+            self.board.ui(ui, &mut self.toasts);
             egui::Window::new("Controller").show(ctx, |ui| {
                 if let Some(controller) = self.board.selected_controller_mut() {
                     ui.horizontal(|ui| {
@@ -119,6 +135,7 @@ impl eframe::App for Hibiki {
                     ui.label(RichText::new("Right-click on a sound to inspect").italics());
                 }
             });
+            self.toasts.show(ui.ctx());
         });
     }
 }
