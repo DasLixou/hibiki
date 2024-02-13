@@ -82,18 +82,22 @@ impl Board {
             });
             if ui.button("Add Sound").clicked() {
                 if let Some(path) = rfd::FileDialog::new()
-                    .add_filter("Sound File", &["mp3", "wav"])
+                    .add_filter("Sound File", &["mp3", "wav", "flac", "ogg"])
                     .pick_file()
                 {
-                    self.sounds.push(Sound {
-                        kind: SoundKind::Trigger,
-                        source: SoundSource::from_file(path).unwrap(),
-                        sink: Sink::try_new(&self.stream_handle).unwrap(),
-                        state: false,
-                        volume: 1.0,
-                        pan: 1.0,
-                    });
+                    if path.is_file() // necessary on Linux as file dialog allows selecting dirs
+                    {
+                        self.sounds.push(Sound {
+                            kind: SoundKind::Trigger,
+                            source: SoundSource::from_file(path).unwrap(),
+                            sink: Sink::try_new(&self.stream_handle).unwrap(),
+                            state: false,
+                            volume: 1.0,
+                            pan: 1.0,
+                        });
+                    }
                 }
+                // TODO: show error on fail
             }
             ui.horizontal(|ui| {
                 // TODO: make this a grid instead of horizontal
