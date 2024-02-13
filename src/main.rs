@@ -81,6 +81,15 @@ impl eframe::App for Hibiki {
             self.board.ui(ui, &mut self.toasts);
             egui::Window::new("Controller").show(ctx, |ui| {
                 if let Some(controller) = self.board.selected_controller_mut() {
+                    ui.label(
+                        controller
+                            .source
+                            .path
+                            .file_name()
+                            .unwrap()
+                            .to_str()
+                            .unwrap(),
+                    );
                     ui.horizontal(|ui| {
                         ui.label("Kind: ");
                         egui::ComboBox::from_id_source("SoundKind")
