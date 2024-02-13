@@ -1,9 +1,11 @@
 use std::path::PathBuf;
 
 use eframe::egui::{self, Ui, Widget};
+use egui_notify::Toasts;
 use rodio::{OutputStreamHandle, Sink, Source};
 
 use crate::{
+    error::ToastyError,
     scene::{Scene, SceneEntry},
     sound::{Sound, SoundKind, SoundSource},
     trigger::Trigger,
@@ -17,29 +19,43 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(scene_path: PathBuf, stream_handle: OutputStreamHandle) -> Self {
+    pub fn new(
+        scene_path: PathBuf,
+        stream_handle: OutputStreamHandle,
+        toasts: &mut Toasts,
+    ) -> Self {
         Self {
-            sounds: Self::load_sounds(&scene_path, &stream_handle),
+            sounds: Self::load_sounds(&scene_path, &stream_handle, toasts).unwrap_or_default(),
             stream_handle,
             selected_controller: None,
             scene_path,
         }
     }
 
-    fn load_sounds(scene_path: &PathBuf, stream_handle: &OutputStreamHandle) -> Vec<Sound> {
-        let scene = Scene::load(&scene_path);
-        scene
-            .entries
-            .iter()
-            .map(|entry| Sound {
-                kind: entry.controller,
-                source: SoundSource::from_file(entry.sound_path.clone()).unwrap(),
-                sink: Sink::try_new(&stream_handle).unwrap(),
-                state: false,
-                volume: 1.0,
-                pan: 1.0,
-            })
-            .collect()
+    fn load_sounds(
+        scene_path: &PathBuf,
+        stream_handle: &OutputStreamHandle,
+        toasts: &mut Toasts,
+    ) -> Option<Vec<Sound>> {
+        let scene = Scene::load(&scene_path).handle_toasty(toasts)?;
+        Some(
+            scene
+                .entries
+                .iter()
+                .filter_map(|entry| {
+                    SoundSource::from_file(entry.sound_path.clone())
+                        .handle_toasty(toasts)
+                        .map(|source| Sound {
+                            kind: entry.controller,
+                            source,
+                            sink: Sink::try_new(&stream_handle).unwrap(),
+                            state: false,
+                            volume: 1.0,
+                            pan: 1.0,
+                        })
+                })
+                .collect(),
+        )
     }
 
     fn pack_scene(&self) -> Scene {
@@ -63,7 +79,7 @@ impl Board {
         }
     }
 
-    pub fn ui(&mut self, ui: &mut Ui) {
+    pub fn ui(&mut self, ui: &mut Ui, toasts: &mut Toasts) {
         egui::Window::new("Board").show(ui.ctx(), |ui| {
             ui.horizontal(|ui| {
                 ui.label(self.scene_path.file_name().unwrap().to_str().unwrap());
@@ -73,16 +89,23 @@ impl Board {
                         .add_filter("Hibiki Scene", &["hibiki.ron"])
                         .pick_file()
                     {
-                        self.sounds = Self::load_sounds(&path, &self.stream_handle);
+                        if let Some(sounds) = Self::load_sounds(&path, &self.stream_handle, toasts)
+                        {
+                            self.sounds = sounds;
+                        }
                         self.scene_path = path;
                     }
                 }
                 if ui.button("Reload").clicked() {
-                    self.sounds = Self::load_sounds(&self.scene_path, &self.stream_handle);
+                    if let Some(sounds) =
+                        Self::load_sounds(&self.scene_path, &self.stream_handle, toasts)
+                    {
+                        self.sounds = sounds;
+                    }
                 }
                 if ui.button("Save").clicked() {
                     let scene = self.pack_scene();
-                    scene.save(&self.scene_path);
+                    scene.save(&self.scene_path).handle_toasty(toasts);
                 }
                 if ui.button("Save as").clicked() {
                     if let Some(path) = rfd::FileDialog::new()
@@ -91,7 +114,7 @@ impl Board {
                         .save_file()
                     {
                         let scene = self.pack_scene();
-                        scene.save(&path);
+                        scene.save(&path).handle_toasty(toasts);
                         self.scene_path = path;
                     }
                 }
@@ -101,11 +124,10 @@ impl Board {
                     .add_filter("Sound File", &["mp3", "wav", "flac", "ogg"])
                     .pick_file()
                 {
-                    // necessary on Linux as file dialog allows selecting dirs
-                    if path.is_file() {
+                    if let Some(source) = SoundSource::from_file(path).handle_toasty(toasts) {
                         self.sounds.push(Sound {
                             kind: SoundKind::Trigger,
-                            source: SoundSource::from_file(path).unwrap(),
+                            source,
                             sink: Sink::try_new(&self.stream_handle).unwrap(),
                             state: false,
                             volume: 1.0,
@@ -113,7 +135,6 @@ impl Board {
                         });
                     }
                 }
-                // TODO: show error on fail
             }
             ui.horizontal(|ui| {
                 // TODO: make this a grid instead of horizontal

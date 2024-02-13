@@ -5,9 +5,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.79"
-catppuccin-egui = { git = "https://github.com/catppuccin/egui", rev = "bcb5849" }
-eframe = "0.24.1"
-env_logger = "0.10.1"
+catppuccin-egui = { git = "https://github.com/catppuccin/egui", rev = "d737154" } # this is on 'dependabot/cargo/egui-0.26' branch
+eframe = "0.26.1"
+egui-notify = "0.13.0"
+env_logger = "0.11.1"
 rfd = "0.13.0"
 rodio = "0.17.3"
 ron = "0.8"

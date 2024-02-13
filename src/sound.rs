@@ -9,6 +9,8 @@ use std::{
 use rodio::{Decoder, Sink};
 use serde::{Deserialize, Serialize};
 
+use crate::error::HibikiError;
+
 pub struct Sound {
     pub kind: SoundKind,
     pub source: SoundSource,
@@ -26,10 +28,19 @@ pub struct SoundSource {
 }
 
 impl SoundSource {
-    pub fn from_file(path: PathBuf) -> anyhow::Result<SoundSource> {
-        let mut reader = BufReader::new(File::open(&path)?);
+    pub fn from_file(path: PathBuf) -> Result<SoundSource, HibikiError> {
+        if !path.exists() {
+            return Err(HibikiError::DoesNotExist(path));
+        }
+        // necessary on Linux as file dialog allows selecting dirs
+        if !path.is_file() {
+            return Err(HibikiError::NotAFile(path));
+        }
+        let mut reader = BufReader::new(File::open(&path).map_err(HibikiError::InternalError)?);
         let mut bytes = vec![];
-        reader.read_to_end(&mut bytes)?;
+        reader
+            .read_to_end(&mut bytes)
+            .map_err(HibikiError::InternalError)?;
         Ok(Self {
             path,
             data: bytes.into(),
