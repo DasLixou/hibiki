@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use eframe::egui::{self, Ui, Widget};
+use eframe::egui::{self, Sense, Ui, Widget};
 use egui_notify::Toasts;
 use rodio::{OutputStreamHandle, Sink, Source};
 
@@ -50,8 +50,8 @@ impl Board {
                             source,
                             sink: Sink::try_new(&stream_handle).unwrap(),
                             state: false,
-                            volume: 1.0,
-                            pan: 1.0,
+                            volume: entry.volume,
+                            pan: entry.pan,
                         })
                 })
                 .collect(),
@@ -66,6 +66,8 @@ impl Board {
                 .map(|sound| SceneEntry {
                     sound_path: sound.source.path.clone(),
                     controller: sound.kind,
+                    volume: sound.volume,
+                    pan: sound.pan,
                 })
                 .collect(),
         }
@@ -132,7 +134,7 @@ impl Board {
                                 sink: Sink::try_new(&self.stream_handle).unwrap(),
                                 state: false,
                                 volume: 1.0,
-                                pan: 1.0,
+                                pan: 0.0,
                             });
                         }
                     }
@@ -158,40 +160,43 @@ impl Board {
         let trigger = Trigger {}.ui(ui);
         match sound.kind {
             SoundKind::Trigger if trigger.clicked() => {
-                let source = sound.source.source();
-                stream_handle.play_raw(source.convert_samples()).unwrap();
+                let source = sound.source.decoder();
+                stream_handle
+                    .play_raw(source.convert_samples().amplify(sound.volume as f32))
+                    .unwrap();
             }
             SoundKind::CutItself if trigger.clicked() => {
-                let source = sound.source.source();
+                let source = sound.source.decoder();
                 sound.sink.clear();
                 sound.sink.append(source);
                 sound.sink.play();
             }
-            SoundKind::Hold if trigger.drag_started() => {
-                let source = sound.source.source();
+            // we need to use Sense::drag via interact here so we also trigger through a click without drag movement
+            SoundKind::Hold if trigger.interact(Sense::drag()).drag_started() => {
+                let source = sound.source.decoder();
                 sound.sink.clear();
                 sound.sink.append(source);
                 sound.sink.play();
             }
-            SoundKind::Hold if trigger.drag_released() => {
+            SoundKind::Hold if trigger.interact(Sense::drag()).drag_released() => {
                 sound.sink.stop();
             }
-            SoundKind::HoldRepeat if trigger.drag_started() => {
-                let source = sound.source.source();
+            SoundKind::HoldRepeat if trigger.interact(Sense::drag()).drag_started() => {
+                let source = sound.source.decoder();
                 sound.sink.clear();
                 sound.sink.append(source.repeat_infinite());
                 sound.sink.play();
             }
-            SoundKind::HoldRepeat if trigger.drag_released() => {
+            SoundKind::HoldRepeat if trigger.interact(Sense::drag()).drag_released() => {
                 sound.sink.stop();
             }
             SoundKind::Toggle if trigger.clicked() => {
-                if sound.state {
+                if sound.state && !sound.sink.empty() {
                     sound.state = false;
                     sound.sink.clear();
                 } else {
                     sound.state = true;
-                    let source = sound.source.source();
+                    let source = sound.source.decoder();
                     sound.sink.clear();
                     sound.sink.append(source);
                     sound.sink.play();
@@ -203,7 +208,7 @@ impl Board {
                     sound.sink.clear();
                 } else {
                     sound.state = true;
-                    let source = sound.source.source();
+                    let source = sound.source.decoder();
                     sound.sink.clear();
                     sound.sink.append(source.repeat_infinite());
                     sound.sink.play();

@@ -7,7 +7,7 @@ pub struct Trigger {}
 
 impl Widget for Trigger {
     fn ui(self, ui: &mut Ui) -> Response {
-        let (rect, response) = ui.allocate_at_least(Vec2::splat(50.), Sense::click_and_drag());
+        let (rect, response) = ui.allocate_at_least(Vec2::splat(50.), Sense::click());
         ui.painter()
             .rect_filled(rect, 10., catppuccin_egui::MACCHIATO.surface1);
 

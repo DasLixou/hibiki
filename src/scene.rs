@@ -46,4 +46,6 @@ impl Scene {
 pub struct SceneEntry {
     pub sound_path: PathBuf,
     pub controller: SoundKind,
+    pub volume: f64,
+    pub pan: f64,
 }
