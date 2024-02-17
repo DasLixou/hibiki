@@ -16,9 +16,9 @@ jobs:
       - name: Make Release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
-	  repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           automatic_release_tag: "nightly"
-	  prerelease: true
+          prerelease: true
           title: "Nightly Release"
-	  files: |
+          files: |
             target/release/hibiki.exe
