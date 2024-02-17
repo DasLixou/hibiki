@@ -8,17 +8,17 @@ jobs:
     runs-on: "windows-latest"
 
     steps:
-    	- uses: actions/checkout@v4
-     	- name: restore cache
-      	  uses: Swatinem/rust-cache@v2
-	- name: Build
- 	  run: cargo build --release
-        - name: Make Release
-	  uses: "marvinpinto/action-automatic-releases@latest"
-          with:
-	    repo_token: ${{ secrets.GITHUB_TOKEN }}
-            automatic_release_tag: "nightly"
-	    prerelease: true
-            title: "Nightly Release"
-	    files: |
-              target/release/hibiki.exe
+      - uses: actions/checkout@v4
+      - name: restore cache
+        uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release
+      - name: Make Release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+	  repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: "nightly"
+	  prerelease: true
+          title: "Nightly Release"
+	  files: |
+            target/release/hibiki.exe
